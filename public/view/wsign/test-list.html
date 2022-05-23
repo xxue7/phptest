@@ -1,0 +1,103 @@
+<?php require WSIGN_VIEW_PATH . '/_meta.html';?>
+<!--[if IE 6]>
+<script type="text/javascript" src="lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<!--/meta 作为公共模版分离出去-->
+
+<title>支付宝网页支付测试项目</title>
+</head>
+<body>
+<article class="page-container">
+	<form action="/wsign/test/c" method="get" class="form form-horizontal" id="form-member-add" >
+		<div class="row cl">
+			<label class="form-label col-xs-4 col-sm-3">选择类型</label>
+			<div class="formControls col-xs-8 col-sm-5"> <span class="select-box">
+				<select class="select" name="id">
+					<option value='0'>请选择商品</option>
+					<?php 
+						$strc='';
+						foreach($info as $v){
+						$strc.="<option value='{$v["id"]}'>{$v['name']}</option>";
+					}
+						echo $strc;
+					?>
+				</select>
+				</span> 
+			</div>
+		</div>
+		<div class="row cl">
+			<label class="form-label col-xs-4 col-sm-3">价格：</label>
+			<div class="formControls col-xs-8 col-sm-5">
+				<input type="text" class="input-text"  id="price" disabled >
+			</div>
+		</div>
+		<div class="row cl">
+			<label class="form-label col-xs-4 col-sm-3">数量(库存/<span id="pkc"></span>)：</label>
+			<div class="formControls col-xs-8 col-sm-9">
+				<input type="number" class="input-text" value="1" min=0 name="count" id="pcount" max="">
+			</div>
+		</div>
+		<div class="row cl">
+			<label class="form-label col-xs-4 col-sm-3">总价格：</label>
+			<div class="formControls col-xs-8 col-sm-9" >
+				<input type="number" class="input-text" name="ajiage" id="allcount" readonly="" style="width: 100px">
+			</div>
+		</div>
+		<div class="row cl">
+			<div class="col-xs-8 col-sm-9 col-xs-offset-4 col-sm-offset-3">
+				<input id="btnc" class="btn btn-primary radius" type="submit" value="&nbsp;&nbsp;提交&nbsp;&nbsp;">	
+				<a href='/wsign-test-lis.html' style="margin-left: 50px;" 	>订单页面</a>			
+			</div>
+
+		</div>
+	</form>
+</article>
+
+<!--_footer 作为公共模版分离出去-->
+<?php require WSIGN_VIEW_PATH . '/_footer.html';?><!--/_footer 作为公共模版分离出去-->
+
+<!--请在下方写此页面业务相关的脚本-->
+<script type="text/javascript">
+	var cinfo=<?php echo json_encode($info)?>;
+	$(function(){
+		//cinfo=jQuery.parseJSON(cinfo);
+		//console.log(cinfo[0].id);
+		//changep();
+		$('.select').on('change',function(){
+			changep();
+		});
+
+		$('#pcount').on('input',function(){
+			pcounta();
+		});
+
+		$('#btnc').click(function(){
+			if(parseFloat($('#allcount').val()+0)<=0.00){
+				layer.msg('请输入选择正确参数',{icon:2,time:2000});
+				return false;
+			}
+		});
+		
+	});
+
+	function pcounta(){
+		$('#allcount').val(($('#price').val()*parseInt($('#pcount').val())).toFixed(2));
+	}
+
+	function changep(){
+		if ($('.select').val()==0) {
+				$('#form-member-add')[0].reset();
+				return;
+			}
+			var pd=cinfo[$('.select').val()-1];
+			$('#pname').val(pd.name);
+			$('#price').val(pd.price);
+			$('#pkc').text(pd.count);
+			$('#pcount').attr('max',pd.count);
+			pcounta();
+	}
+</script>
+<!--/请在上方写此页面业务相关的脚本-->
+</body>
+</html>

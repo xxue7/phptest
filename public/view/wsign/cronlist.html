@@ -1,0 +1,124 @@
+<?php require WSIGN_VIEW_PATH.'/_meta.html';?>
+<!--[if IE 6]>
+<script type="text/javascript" src="lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<title>用户管理</title>
+</head>
+<body>
+<nav class="breadcrumb"><i class="Hui-iconfont">&#xe67f;</i> 首页 <span class="c-gray en">&gt;</span> 用户中心 <span class="c-gray en">&gt;</span> 用户管理 <a class="btn btn-success radius r" style="line-height:1.6em;margin-top:3px" href="javascript:location.replace(location.href);" title="刷新" ><i class="Hui-iconfont">&#xe68f;</i></a></nav>
+<div class="page-container">
+	<?php qchche();?>
+	<div class="cl pd-5 bg-1 bk-gray mt-20"> <span class="r"><?php echo $strstatus;?>  共有数据：<strong><?php echo $count;?></strong> 条</span> </div>
+	<div class="mt-20">
+	<table class="table table-border table-bordered table-hover table-bg table-sort">
+		<thead>
+			<tr class="text-c">
+				<th width="50">ID</th>
+				<th width="90">任务名称</th>
+				<th width="60">完成状态</th>
+				<th width="60">完成时间</th>
+				<th width="60">是否停用</th>
+				<th width="60">order</th>
+				<th width="60">worktime(m)</th>
+				<th width="100">操作</th>
+			</tr>
+		</thead>
+		<tbody>
+			<?php foreach($list as $v): ?>
+			<tr class="text-c">
+				<td><?php echo $v['id'];?></td>
+				<td><?php echo $v['name'];?></td>
+				<td><?php echo $v['status'];?></td>
+				<td><?php echo date('Y-m-d H:i:s',$v['endtime']);?></td>
+				<td ondblclick="status_change({id:<?php echo $v['id'];?>,isstop:<?php echo $v['isstop'];?>},'/wsign/info/sstop','/wsign-info-cls.html?qflag=1')"><?php echo $v['isstop'];?></td>
+				<td ondblclick="orderchange(<?php echo $v['id'];?>,<?php echo $v['order'];?>)"><?php echo $v['order'];?></td>
+				<td ondblclick="wtchange(<?php echo $v['id'];?>,<?php echo $v['w_time'];?>)"><?php echo $v['w_time'];?></td>
+				<td class="td-manage"><a title="编辑" href="javascript:;"  class="ml-5" onclick="status_change({id:<?php echo $v['id'];?>,status:<?php echo $v['status'];?>},'/wsign/info/cs','/wsign-info-cls.html?qflag=1')" style="text-decoration:none"><i class="Hui-iconfont"></i></a>
+				</td>
+			</tr>
+		<?php endforeach; ?>
+		</tbody>
+	</table>
+	</div>
+</div>
+<!--_footer 作为公共模版分离出去-->
+<?php require WSIGN_VIEW_PATH.'/_footer.html';?> <!--/_footer 作为公共模版分离出去-->
+
+<!--请在下方写此页面业务相关的脚本-->
+<script type="text/javascript" src="/public/lib/My97DatePicker/4.8/WdatePicker.js"></script> 
+<script type="text/javascript" src="/public/lib/datatables/1.10.0/jquery.dataTables.min.js"></script> 
+<script type="text/javascript" src="/public/lib/laypage/1.2/laypage.js"></script>
+<script type="text/javascript" src="/public/static/bd/comm.js"></script>
+<script type="text/javascript">
+$(function(){
+	$('.table-sort').dataTable({
+		"aaSorting": [[ 3, "asc" ]],//默认第几个排序
+		"bStateSave": true,//状态保存
+		"aoColumnDefs": [
+		  //{"bVisible": false, "aTargets": [ 3 ]} //控制列的隐藏显示
+		  //{"orderable":false,"aTargets":[0,8,9]}// 制定列不参与排序
+		]
+	});
+
+	
+	
+});
+
+function orderchange(id,orderid){
+
+	layer.prompt({title:'修改排序',value:orderid},function(text,index){
+		layer.close(index);
+		if(text<0||text>255){
+			layer.alert('请输入一个0-255正整数',{icon:2});
+		}else{
+			$.post('/wsign/info/corder',{id:id,order:text},function(e){
+				if(e.code==1){
+							
+					layer.alert('已成功!',{icon:1},function(){
+						location.href="/wsign-info-cls.html?qflag=1";
+					});	
+						
+							
+				}else{
+					
+					    layer.alert(e.msg,{icon:2});
+							
+				}
+			},'json');
+		}
+		
+	});
+
+}
+function wtchange(id,wtime){
+
+	layer.prompt({title:'修改执行时间',value:wtime},function(text,index){
+		layer.close(index);
+		if(text<0||text>1440){
+			layer.alert('请输入一个0-1440正整数',{icon:2});
+		}else{
+			$.post('/wsign/info/cwtime',{id:id,wtime:text},function(e){
+				if(e.code==1){
+							
+					layer.alert('已成功!',{icon:1},function(){
+						location.href="/wsign-info-cls.html?qflag=1";
+					});	
+						
+							
+				}else{
+					
+					    layer.alert(e.msg,{icon:2});
+							
+				}
+			},'json');
+		}
+		
+	});
+}
+
+
+
+</script> 
+</body>
+</html>

@@ -1,0 +1,55 @@
+﻿<?php require WSIGN_VIEW_PATH.'/_meta.html';?>
+<title>登陆信息</title>
+</head>
+<body>
+<div class="page-container">
+	<?php qchche();?>
+	<div class="cl pd-5 bg-1 bk-gray mt-20"><?php echo 'php版本:'.PHP_VERSION . '  服务器系统:' . PHP_OS . '  服务器软件:' . $_SERVER['SERVER_SOFTWARE'] ?>  <span class="r">最新10条登陆记录</span> </div>
+	<div class="mt-20">
+	<table class="table table-border table-bordered table-hover table-bg table-sort">
+		<thead>
+			<tr class="text-c">
+				<th width="30">ID</th>
+				<th width="30">name</th>
+				<th width="150">ua</th>
+				<th width="40">ip</th>
+				<th width="30">logintype</th>
+				<th width="70">time</th>				
+			</tr>
+		</thead>
+		<tbody>
+			<?php $m=['','账号密码','cookie','weibo']; foreach($list as $v): ?>
+			<tr class="text-c">
+				<td><?php echo $v['id'];?></td>
+				<td><?php echo $v['name'];?></td>
+				<td><?php echo $v['ua'];?></td>
+				<td><?php echo long2ip($v['ip']);?></td>
+				<td><?php  echo $m[$v['login_type']]?></td>
+				<td><?php echo date('Y-m-d H:i:s',$v['time']);?></td>
+			</tr>
+		<?php endforeach; ?>
+		</tbody>
+	</table>
+	</div>
+</div>
+<?php require WSIGN_VIEW_PATH.'/_footer.html';?>
+<!--请在下方写此页面业务相关的脚本-->
+<script type="text/javascript" src="/public/lib/datatables/1.10.0/jquery.dataTables.min.js"></script> 
+<script type="text/javascript" src="/public/lib/laypage/1.2/laypage.js"></script>
+<script type="text/javascript">
+$(function(){
+	$('.table-sort').dataTable({
+		"aaSorting": [[ 0, "desc" ]],//默认第几个排序
+		"bStateSave": true,//状态保存
+		"aoColumnDefs": [
+		  //{"bVisible": false, "aTargets": [ 3 ]} //控制列的隐藏显示
+		  //{"orderable":false,"aTargets":[0,8,9]}// 制定列不参与排序
+		]
+	});
+
+	
+	
+});
+</script>
+</body>
+</html>

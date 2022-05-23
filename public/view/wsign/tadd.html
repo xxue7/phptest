@@ -1,0 +1,211 @@
+<?php require WSIGN_VIEW_PATH . '/_meta.html';?>
+<!--[if IE 6]>
+<script type="text/javascript" src="lib/DD_belatedPNG_0.0.8a-min.js" ></script>
+<script>DD_belatedPNG.fix('*');</script>
+<![endif]-->
+<!--/meta 作为公共模版分离出去-->
+
+<title>账号添加</title>
+</head>
+<body>
+<article class="page-container">
+	<form action="" method="post" class="form form-horizontal" id="form-member-add">
+		<div class="row cl">
+			<label class="form-label col-xs-4 col-sm-3">选择类型</label>
+			<div class="formControls col-xs-8 col-sm-5"> <span class="select-box">
+				<select class="select">
+					<option value="1">添加账号</option>
+					<option value="2">封禁账号</option>
+					<option value="3">更新账号</option>
+				</select>
+				</span> 
+			</div>
+		</div>
+		<div id="cdiv">
+			<div class="row cl">
+				<label class="form-label col-xs-4 col-sm-3">Cookie：</label>
+				<div class="formControls col-xs-8 col-sm-5">
+					<textarea name="cookie" cols="" rows="" class="textarea"></textarea>
+				</div>
+			</div>
+		</div>
+		<div id="ddiv">
+			<div class="row cl">
+				<label class="form-label col-xs-4 col-sm-3">封禁账号：</label>
+				<div class="formControls col-xs-8 col-sm-5" >
+					<textarea name="r"  class="textarea" style="height:200px"></textarea>
+				</div>
+			</div>
+			<div class="row cl">
+				<label class="form-label col-xs-4 col-sm-3">贴吧：</label>
+				<div class="formControls col-xs-8 col-sm-5">
+					<input type="text" class="input-text" value="" placeholder="" id="kw" name="kw">
+				</div>
+			</div>
+			<div class="row cl">
+				<label class="form-label col-xs-4 col-sm-3">管理账号：</label>
+				<div class="formControls col-xs-8 col-sm-5">
+					<input type="text" class="input-text" value="" placeholder="" id="un" name="un">
+				</div>
+			</div>
+		</div>
+		<div id="deldiv">
+			<div class="row cl">
+				<label class="form-label col-xs-4 col-sm-3">账号：</label>
+				<div class="formControls col-xs-8 col-sm-5"> 
+					<span class="select-box">
+					<select class="select" id="delopt">
+						<?php 
+							$strc='';
+							foreach($zhinfo as $v){
+							$strc.="<option value='{$v["id"]}'>".strReplaceStart($v['name'],0)."</option>";
+						}
+							echo $strc;
+						?>
+					</select>
+					</span> 
+				</div>
+			</div>
+		</div>
+		<div class="row cl">
+			<div class="col-xs-8 col-sm-9 col-xs-offset-4 col-sm-offset-3">
+				<input id="btnc" class="btn btn-primary radius" type="button" value="&nbsp;&nbsp;提交&nbsp;&nbsp;">
+				<input id="btnbdel" class="btn btn-primary radius" type="button" value="&nbsp;&nbsp;删除&nbsp;&nbsp;">
+				<input id="btnsxgz" class="btn btn-primary radius" type="button" value="&nbsp;&nbsp;刷新&nbsp;&nbsp;">
+				<a href="/bduss" target="_blank" style="padding-left: 30px">获取BDUSS</a>
+				<a href="/wsign/tsign/info?token=<?php echo G('token');?>" target="_self" style="padding-left: 30px">日志信息</a>
+			</div>
+		</div>
+	</form>
+</article>
+
+<!--_footer 作为公共模版分离出去-->
+<?php require WSIGN_VIEW_PATH . '/_footer.html';?><!--/_footer 作为公共模版分离出去-->
+
+<!--请在下方写此页面业务相关的脚本-->
+<script type="text/javascript">
+
+	$(function(){
+		opp();
+		$('#btnc').click(function(){
+			var sel=$('.select').val();
+			if(sel==1){
+				add_user();
+			}else if(sel==2){
+				add_block('');
+			}else if(sel==3){
+				layer.confirm('确认要删除吗？',function(index){
+					layer.close(index);
+					update_user('');
+				});
+				
+			}
+
+		});
+
+		$('#btnbdel').click(function(){
+			add_block('/wsign/tsign/bdel?token=<?php echo G('token');?>');
+		});
+
+		$('#btnsxgz').click(function(){
+			layer.confirm('确认要刷新吗？',function(index){
+					layer.close(index);
+					update_user('/wsign/tsign/upgz?token=<?php echo G('token');?>')
+				});
+		});
+
+		$('.select').on('change',function(){
+			//console.log(e);
+			opp();
+		});
+		
+	});
+
+	function opp(){
+		$('#btnc').val('提交');
+		var op=$('.select').val();
+			if(op==2){
+				$('#cdiv').hide();
+				$('#deldiv').hide();
+				$('#ddiv').show();
+				$('#btnbdel').show();
+				$('#btnsxgz').hide();
+			}else if(op==1){
+				$('#ddiv').hide();
+				$('#btnbdel').hide();
+				$('#deldiv').hide();
+				$('#cdiv').show();
+				$('#btnsxgz').hide();
+			}else{
+				$('#btnc').val('删除账号');
+				$('#cdiv').hide();
+				$('#ddiv').hide();
+				$('#btnbdel').hide();
+				$('#deldiv').show();
+				$('#btnsxgz').show();
+			}
+	}
+
+	function add_user(){
+		//var cookie=/BDUSS=.{192};/.test($('#cdiv .textarea').val());
+			//alert(cookie);
+			if(!/BDUSS=.{192};/.test($('#cdiv .textarea').val())){
+				layer.alert('请输入正确的cookie',{icon:2});
+				return false;
+			}
+			//alert(cookie[1]);
+			$.post('',{cookie:$('#cdiv .textarea').val(),op:1},function(e){
+				if(e.code==1){
+					layer.alert(e.msg,{icon:1});
+					$('.textarea').val('');
+				}else{
+					layer.alert(e.msg,{icon:2});
+				}
+
+			},'json');
+	}
+
+	function update_user(url){
+
+		var id=$('#delopt').val();
+		$.post(url,{dopt:id,op:3},function(e){
+				if(e.code==1){
+					layer.alert(e.msg,{icon:1});
+					if (url=='') {
+						$('#delopt option[value='+id+']').remove();
+					}
+					
+				}else{
+					layer.alert(e.msg,{icon:2});
+				}
+
+			},'json');
+
+	}
+
+	function add_block(url){
+		var r=$('#ddiv .textarea').val().trim();
+			var kw=$('#kw').val().trim();
+			var un=$('#un').val().trim();
+			//alert(cookie);
+			if(r==''||kw==''||un==''){
+				layer.alert('请输入完整数据',{icon:2});
+				return false;
+			}
+			//alert(cookie[1]);
+			$.post(url,{kw:kw,r:r,un:un,op:2},function(e){
+				if(e.code==1){
+					layer.alert(e.msg,{icon:1});
+					$('.textarea').val('');
+					$('#kw').val('');
+					$('#un').val('');
+				}else{
+					layer.alert(e.msg,{icon:2});
+				}
+
+			},'json');
+	}
+</script>
+<!--/请在上方写此页面业务相关的脚本-->
+</body>
+</html>
