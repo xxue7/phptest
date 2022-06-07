@@ -127,7 +127,7 @@ class Http {
 
 			throw new Exception(curl_error($curl), ErrorConst::HTTP_CODE);
 		}
-		if ($this->is_header && preg_match_all('/Set-Cookie:([^\n]+)/', $content, $matchs)) {
+		if ($this->is_header && preg_match_all('/[Ss]et-[Cc]ookie:([^\n]+)/', $content, $matchs)) {
 			//var_dump($matchs);exit();
 			$this->cookiec = $matchs[1];
 		}

@@ -14,6 +14,16 @@ class BotMsg {
 		return Http::R('https://qmsg.zendee.cn/send/' . $key, "msg={$msg}");
 	}
 
+	public static function teleGramMsg(string $msg, string $token): string{
+
+		$res = json_decode(Http::R("https://api.telegram.org/bot{$token}/getUpdates"), true);
+		$chat_id = $res['result'][0]['my_chat_member']['chat']['id'] ?? 0;
+		if ($chat_id) {
+			return Http::R("https://api.telegram.org/bot{$token}/sendMessage?chat_id={$chat_id}&text={$msg}");
+		}
+		return 'chat_id error';
+	}
+
 }
 
 ?>

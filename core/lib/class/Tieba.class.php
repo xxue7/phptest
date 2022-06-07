@@ -1,6 +1,8 @@
 <?php
 /**
  *https://tieba.baidu.com/mg/o/profile?format=json
+ *http://tieba.baidu.com/f/bawu/admin_group?kw=%E9%99%86%E9%9B%AA%E7%90%AA&ie=utf-8
+ *https://tieba.baidu.com/i/sys/user_json?uid=1 or un=
  */
 if (!defined('EXITFORBID')) {
 	exit('forbid');
@@ -20,7 +22,7 @@ class Tieba extends Http {
 		$this->data = [
 			'_client_id' => 'wappc_1559714929207_884',
 			'_client_type' => 1,
-			'_client_version' => '10.2.4',
+			'_client_version' => '12.21.1.0',
 			'_os_version' => '12.3.1',
 			'_phone_imei' => 'AE2CBC629C2745EFE8129FB3DCE46101',
 			'_phone_newimei' => 'AE2CBC629C2745EFE8129FB3DCE46101',
@@ -243,6 +245,13 @@ class Tieba extends Http {
 		$this->initCommonData();
 		$tdata = ['BDUSS' => $bduss, 'tbs' => $tbs, 'fid' => $fid, 'kw' => $kw, 'uid' => $uid];
 		$res = json_decode($this->setDatac($tdata)->md5sign()->request(TiebaConst::APP_URL . '/c/c/forum/sign', $this->data . '&sig=9b7c9d4ac0772d6d96a989e9651119b9'), true);
+		return $res;
+	}
+
+	public function page($tid, $pn) {
+		$this->initCommonData();
+		$tdata = ['kz' => $tid, 'pn' => $pn, 'rn' => 30, 'with_floor' => 1];
+		$res = $this->setDatac($tdata)->md5sign()->request(TiebaConst::APP_URL . '/c/f/pb/page', $this->data);
 		return $res;
 	}
 

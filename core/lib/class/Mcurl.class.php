@@ -8,9 +8,9 @@ class Mcurl {
 		curl_setopt($this->curl, CURLOPT_RETURNTRANSFER, 1); // 抓取结果直接返回（如果为0，则直接输出内容到页面）
 		curl_setopt($this->curl, CURLOPT_HTTPHEADER, $header);
 	}
-	public function __destruct() {
-		curl_close($this->curl);
-	}
+	// public function __destruct() {
+	// 	curl_close($this->curl);
+	// }
 
 	public static function Request($url, $header = [], $data = '', $config = []) {
 		$wcurl = new Mcurl($url, $header);
@@ -80,10 +80,11 @@ class Mcurl {
 
 	public static function getResponseCookie($content, $key = '') {
 		$cookie = '';
-		if (preg_match_all('/Set-Cookie:([^=]+)=([^;]+)/', $content, $matchs)) {
+		if (preg_match_all('/[Ss]et-[Cc]ookie:([^=]+)=([^;]+)/', $content, $matchs)) {
 			foreach ($matchs[0] as $value) {
-				$ck = str_replace('Set-Cookie: ', '', $value) . ';';
+				$ck = str_ireplace('Set-Cookie: ', '', $value) . ';';
 				if (!empty($key)) {
+					//dump($ck);
 					if (stripos($ck, $key . '=') === 0) {
 						return $ck;
 					}

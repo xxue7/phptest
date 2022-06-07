@@ -53,6 +53,8 @@ class Api extends WsignBase {
 					$wb = new Weibo($cookie);
 					$uidname = $wb->getUidName();
 
+					//dump($uidname);
+
 					if (isset($uidname['id']) && $params['wuid'] == $uidname['id']) {
 						//var_dump('update user set cookie="' . $cookie . '",name="' . $uidname['name'] . '" where id=' . $id);exit;
 						Db::getInstance()->exec('update user set cookie=:cookie,name=:name,status=:status where id=:id', [':id' => $params['id'], ':cookie' => $cookie, ':name' => $uidname['name'], ':status' => $params['status']]);

@@ -26,6 +26,7 @@ class IqiSign implements CronInterface {
 			$condition = isset($r['code']) && $r['code'] == 'A00000';
 			if (!$condition) {
 				$info[4] = isset($r['msg']) ? $r['msg'] : '解析错误';
+				$desp = $info[4];
 			} else {
 				$cumulateSignDaysSum = $r["data"]["data"]["signDays"];
 				$vipinfotime = json_decode(Http::R("https://vinfo.vip.iqiyi.com/external/vip_users?P00001={$resi['P00001']}&platform=01080031010000000000&version=3.0&appVersion=1.0&bizSource=vip_web_player&messageId=13AB123C-E346-E86D-2C0F-0A4AA94F4726&vipTypes=1%2C3%2C4%2C5%2C7%2C8%2C10%2C13%2C14%2C16%2C18"), true)['data']['vip_info']['deadline']['date'];

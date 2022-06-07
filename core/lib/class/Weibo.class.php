@@ -14,7 +14,7 @@ class Weibo extends Http {
 
 	function __construct($cookie = '') {
 
-		$this->cookie = $cookie;
+		$this->cookie = trim($cookie);
 
 	}
 
@@ -91,7 +91,7 @@ class Weibo extends Http {
 
 	}
 
-	private function report($guid, $rid, $ref = '') {
+	private function report($guid, $rid, $ref = '', $xuan = []) {
 
 		// $header = ['Content-Type: application/x-www-form-urlencoded', 'Cookie: ' . $this->cookie, 'Referer: https://service.account.weibo.com/reportspam?rid=' . $rid . '&from=10106&type=1&url=%2Fu%2F' . $guid . '&bottomnav=1&wvr=5', 'User-Agent: ' . HttpHeader::getUserAgent()];
 		if (!$ref) {
@@ -129,33 +129,27 @@ class Weibo extends Http {
 
 		$httpHeader = new HttpHeader();
 		$header = $httpHeader->setContentType()->setCookie($cktmp)->setReferer($url)->setUserAgent(HttpHeader::getUserAgent())->getHeader();
-		//category=1&tag_id=108
-		$ct = ['category=2&tag_id=202', 'category=28&tag_id=2803', 'category=6&tag_id=601&extra=%E8%A8%80%E8%BE%9E%E4%BD%8E%E4%BF%97%EF%BC%8C%E4%BE%AE%E8%BE%B1%E8%B0%A9%E9%AA%82'];
-		$data = $ct[array_rand($ct)] . '&url=%2Fu%2F' . $guid . '&type=1&rid=' . $rid . '&uid=' . $this->uid . '&r_uid=' . $guid . '&from=99&getrid=' . $rid . '&appGet=0&weiboGet=0&blackUser=1&_t=0';
+		//'category=42&tag_id=4201','category=46&tag_id=4604','category=2&tag_id=202',, 'category=6&tag_id=604', 'category=6&tag_id=605', 'category=6&tag_id=606'
+		$ct = empty($xuan) ? ['category=6&tag_id=603', 'category=6&tag_id=604', 'category=6&tag_id=605'] : $xuan;
+		$cc = $ct[array_rand($ct)];
+		echo "举报选项:{$cc}--";
+		$data = $cc . '&url=%2Fu%2F' . $guid . '&type=1&rid=' . $rid . '&uid=' . $this->uid . '&r_uid=' . $guid . '&from=99&getrid=' . $rid . '&appGet=0&weiboGet=0&blackUser=1&_t=0';
 		//var_dump($data);exit();
 		//dump($header);
 		return $this->request(WeiboConst::REPORT_URL, $data, $header);
 
 	}
 
-	private function reportList($wlist, $blackarr = [], $ref = '') {
+	private function reportList($wlist, $blackarr = [], $ref = '', $con = '', $xuan = []) {
 		$restmp = '';
-
 		$len = count($wlist);
-
-		//echo $guid . '--' . $len . '<br>';
-		//
-		// $counts = 0;
-
-		// $countd = 0;
-
 		$counth = 0;
-
 		for ($i = 0; $i < $len; $i++) {
 			try {
-
+				if (!isset($wlist[$i]['mblog'])) {
+					continue;
+				}
 				$guid = $wlist[$i]['mblog']['user']['id'];
-
 				//echo $wlist[$i]['mblog']['user']['id'] . '--' . $wlist[$i]['mblog']['id'] . PHP_EOL;
 				if (!empty($blackarr)) {
 					if (!in_array($guid, $blackarr)) {
@@ -163,9 +157,14 @@ class Weibo extends Http {
 						continue;
 					}
 				}
+				if (!empty($con)) {
+					if (!preg_match("/{$con}/", $wlist[$i]['mblog']['text'])) {
+						$counth++;
+						continue;
+					}
+				}
 				$rid = $wlist[$i]['mblog']['id'];
-				$res = json_decode($this->report($guid, $rid, $ref), true);
-
+				$res = json_decode($this->report($guid, $rid, $ref, $xuan), true);
 				$restmp = isset($res['msg']) ? $res['msg'] : 'json err';
 
 				//$title = isset($wlist[$i]['mblog']['raw_text']) ? $wlist[$i]['mblog']['raw_text'] : $wlist[$i]['mblog']['text'];
@@ -199,14 +198,16 @@ class Weibo extends Http {
 		//echo '<font color="blue">' . date('m-d H:i:s', time()) . '</font>-' . $len . '-ok-<font color="red" size="5px">' . $counts . '</font>-no-' . $countd . '-bh-' . $counth . '<br>';
 	}
 
-	public function reportUid($guid, $pn = 1) {
+	public function reportUid($guid, $pn = 1, $con = '', $xuan = []) {
 
 		try {
 			$this->getUid();
 
 			$wlist = $this->getUserWbList($guid, $pn);
 
-			$this->reportList($wlist);
+			//dump($wlist[0]['mblog']['text']);
+
+			$this->reportList($wlist, [], '', $con, $xuan);
 
 		} catch (Exception $ee) {
 			//var_dump($ee->getCode());exit();
@@ -324,15 +325,181 @@ class Weibo extends Http {
 	}
 
 	public function getUidName() {
-
-		$re = @json_decode($this->request('https://m.weibo.cn/profile/info', '', (new HttpHeader(['Cookie' => $this->cookie]))->getHeader()), true);
+		$res = $this->request('https://weibo.com/p/10080809efa465aa718c634894e8a868d8fccc/super_index?sudaref=weibo.com', '', ['Cookie: ' . $this->cookie]);
+		// $re = @json_decode($this->request('https://m.weibo.cn/profile/info', '', (new HttpHeader(['Cookie' => $this->cookie, 'Referer' => 'https://m.weibo.cn/profile/info', 'x-xsrf-token' => Tieba::fromKeyCookie($this->cookie, 'XSRF-TOKEN')]))->getHeader()), true);
 		$uidname = array();
-		if (!empty($re['data'])) {
-			$uidname['id'] = $re['data']['user']['id'];
-			$uidname['name'] = $re['data']['user']['screen_name'];
+		if (stripos($res, "CONFIG['islogin']='1'") > 0) {
+			$uidname['id'] = strMid("CONFIG['uid']='", "'", $res);
+			$uidname['name'] = strMid("CONFIG['nick']='", "'", $res);
 		}
+		// if (!empty($re['data'])) {
+		// 	$uidname['id'] = $re['data']['user']['id'];
+		// 	$uidname['name'] = $re['data']['user']['screen_name'];
+		// }
 		return $uidname;
 	}
+
+	public static function wbReport($rid, $xuan, $cookie, $type = 1) {
+		$report_url = 'https://service.account.weibo.com/reportspamobile?rid=' . $rid . '&type=' . $type . '&from=30000&luicode=10000003&from=10C4093010&lang=zh_CN&c=iphone&ua=iPhone13%2C2__weibo__12.4.0__iphone__os15.4.1&disable_sinaurl=1&skin=default&v_p=90&wm=3333_2001&b=0';
+		$res = Mcurl::Request($report_url, ['Cookie: ' . $cookie], '', ['rsponseHeader' => 1]);
+		$key = '05f18b5e7747833e04b80059fbc1a9f569209903';
+		$value = Mcurl::getResponseCookie($res, $key);
+		$str = 'key get error';
+		if (!empty($value)) {
+			$ct = $xuan[array_rand($xuan)];
+			$report_data = $ct . '&' . strMid("'extra_data' value='", "'/>", $res) . '&appGet=0&weiboGet=0&blackUser=1&_t=0';
+			//dump($report_data);
+			$header = ['X-Requested-With: XMLHttpRequest', 'User-Agent: ' . HttpHeader::getUserAgent(true), 'Referer: ' . $report_url];
+			$curl = new Mcurl('https://service.account.weibo.com/aj/reportspamobile?__rnd=1650890228698', $header);
+			$curl->setCookie("{$value}{$cookie}");
+			$strr = $curl->post($report_data, 1);
+			if (empty($strr)) {
+				$str = $curl->getError();
+			}
+			$str = $ct . '--' . $strr['code'] . ':' . $strr['msg'];
+			$curl->close();
+
+		}
+		return $str;
+
+	}
+
+	public static function wbMobileList($key, $page) {
+		$url = "https://m.weibo.cn/api/container/getIndex?containerid=100103type%3D61%26q%3D{$key}%26t%3D0&page_type=searchall&page={$page}";
+		$res = json_decode(Http::R($url), true);
+		$list = [];
+		if (isset($res['data']['cards'])) {
+			foreach ($res['data']['cards'] as $v) {
+				if ($v['card_type'] == 9) {
+					$list[] = ['id' => $v['mblog']['id'], 'text' => $v['mblog']['text'], 'uid' => $v['mblog']['user']['id'], 'name' => $v['mblog']['user']['screen_name']];
+				}
+			}
+		}
+		return $list;
+
+	}
+	public static function wbKeyReportMobile($key, $page, $cookie, $blacklist = [], $start = 1, $xuan = ['category=6&tag_id=603', 'category=6&tag_id=604']) {
+		$wb = new Weibo($cookie);
+		$wb->getUid();
+		$index = 0;
+		for ($i = $start, $page = $page + $start - 1; $i <= $page; $i++) {
+			try {
+				echo "第{$i}页:" . PHP_EOL;
+				$list = self::wbMobileList($key, $i);
+				foreach ($list as $v) {
+					$index++;
+					if (!empty($blacklist) && !in_array($v['uid'], $blacklist)) {
+						continue;
+					}
+					//$url = 'https://service.account.weibo.com/reportspamobile?rid=' . $v['id'] . '&type=1&from=30000&luicode=10000011&from=10C4193010&lang=zh_CN&c=iphone&ua=iPhone13%2C2__weibo__12.4.0__iphone__os15.4.1&disable_sinaurl=1&skin=default&v_p=90&wm=3333_2001&b=0';
+					//'category=8&tag_id=804', 'category=46&tag_id=4604', 'category=2&tag_id=202',, 'category=6&tag_id=605'
+					//$xuan = ['category=6&tag_id=603', 'category=6&tag_id=604'];
+					//	$xuan = ['category=42&tag_id=4201'];
+					//$cc = $xuan[array_rand($xuan)];
+					//$data = $cc . '&url=%2Fu%2F' . $v['uid'] . '&type=1&rid=' . $v['id'] . '&uid=' . $wb->uid . '&r_uid=' . $v['uid'] . '&from=99&getrid=' . $v['id'] . '&appGet=0&weiboGet=0&blackUser=1&_t=0';
+					echo sprintf("%d-%s-%s" . PHP_EOL, $index, $v['name'], self::wbReport($v['id'], $xuan, $cookie));
+					sleep(4);
+				}
+			} catch (Exception $e) {
+				echo "{$i}-失败" . PHP_EOL;
+			}
+
+		}
+		echo '完成' . PHP_EOL;
+	}
+
+	public function visibleFanWb($mid, $v = 2) {
+		//好友可见
+		$res = json_decode(Http::R('https://weibo.com/p/aj/v6/mblog/modifyvisible?ajwvr=6&domain=100505&__rnd=1652944544225', "visible={$v}&mid={$mid}&_t=0", ['Cookie: ' . $this->cookie, 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36', 'x-requested-with: XMLHttpRequest', 'referer: https://weibo.com/2150961184/profile?is_search=1&visible=0&is_all=1&key_word=%E7%A2%A7%E7%91%B6&is_tag=0&profile_ftype=1&page=1']), true);
+		//dump($res);
+		if ($res['code'] == '100000') {
+			return 1;
+		}
+		return $res['msg'];
+	}
+
+	public function delWyWb($mid) {
+		$res = json_decode(Http::R('https://weibo.com/aj/mblog/del?ajwvr=6', "mid={$mid}", ['Cookie: ' . $this->cookie, 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36', 'x-requested-with: XMLHttpRequest', 'referer: https://weibo.com/2150961184/profile?is_search=1&visible=0&is_all=1&key_word=%E7%A2%A7%E7%91%B6&is_tag=0&profile_ftype=1&page=1']), true);
+		//dump($res);
+		if ($res['code'] == '100000') {
+			return 1;
+		}
+		return $res['msg'];
+	}
+
+	public static function wyKeyUserlist($cookie, $key, $page) {
+		$wb = new Weibo($cookie);
+		$uidname = $wb->getUidName();
+		//$wb->delWyWb(4453163845218526);
+		if (!empty($uidname)) {
+			echo '当前账号:' . $uidname['name'] . ' 关键词:' . $key . PHP_EOL;
+			$teplist = [];
+			while ($page) {
+				echo "当前页数:{$page}" . PHP_EOL;
+
+				for ($i = -1; $i < 2; $i++) {
+					echo "pagebar:{$i}" . PHP_EOL;
+					if ($i == -1) {
+						$res = Http::R("https://weibo.com/{$uidname['id']}/profile?pids=Pl_Official_MyProfileFeed__17&is_search=1&visible=0&is_all=1&key_word={$key}&is_tag=0&profile_ftype=1&page={$page}&ajaxpagelet=1&ajaxpagelet_v6=1&__ref=%2F{$uidname['id']}%2Fprofile%3Fprofile_ftype%3D1%26is_search%3D1%26key_word%3D{$key}%26is_all%3D1%23_0&_t=FM_165294519817859", '', ['Cookie: ' . $cookie, 'user-agent: Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/94.0.4606.71 Safari/537.36']);
+						//dump($res);
+						//$list = strMid('diss-data=\"\" mid=\"', '\"', $res, true);
+					} else {
+						$res = Http::R("https://weibo.com/p/aj/v6/mblog/mbloglist?ajwvr=6&domain=100505&topnav=1&wvr=6&is_all=1&is_search=1&key_word={$key}&pagebar={$i}&pl_name=Pl_Official_MyProfileFeed__17&id=100505{$uidname['id']}&script_uri=/{$uidname['id']}/profile&feed_type=0&page={$page}&pre_page={$page}&domain_op=100505&__rnd=1652941593481", '', ['Cookie: ' . $cookie]);
+
+					}
+					$list = strMid('diss-data=\"\" mid=\"', '\"', $res, true);
+					if (!empty($list) && $list[0] != '') {
+						for ($j = 0, $len = count($list); $j < $len; $j++) {
+							echo ($j + 1) . '.' . $list[$j] . '--';
+							if ($list[$j] == '' || in_array(intval($list[$j]), $teplist)) {
+								echo '跳过' . PHP_EOL;
+								continue;
+							}
+							$r = $wb->visibleFanWb($list[$j]);
+							if ($r === 1) {
+								echo '可见成功' . PHP_EOL;
+								//continue;
+							} else {
+								echo $r . '--删除结果:' . $wb->delWyWb($list[$j]) . PHP_EOL;
+							}
+							$teplist[] = intval($list[$j]);
+							sleep(2);
+						}
+					}
+				}
+				$page++;
+
+			}
+
+		}
+		//https://weibo.com/p/aj/v6/mblog/mbloglist?ajwvr=6&domain=100505&topnav=1&wvr=6&is_all=1&is_search=1&key_word=%E7%A2%A7%E7%91%B6&pagebar=0&pl_name=Pl_Official_MyProfileFeed__17&id=1005052150961184&script_uri=/2150961184/profile&feed_type=0&page=1&pre_page=1&domain_op=100505&__rnd=1652941593481
+	}
+
+	// public static function replyList($id, $cookie, $blacklist = []) {
+	// 	$res = json_decode(Http::R("https://m.weibo.cn/comments/hotflow?id={$id}&mid={$id}&max_id_type=0"), true);
+	// 	$page = 0;
+	// 	while (isset($res['data']['data']) && ($len = count($res['data']['data'])) > 0) {
+	// 		$page++;
+	// 		echo "第{$page}页:" . PHP_EOL;
+	// 		$max_id = $res['data']['max_id'];
+	// 		// for ($i = 0; $i < $len; $i++) {
+	// 		// 	$mid = $res['data']['data'][$i]['id'];
+	// 		// 	$userid = $res['data']['data'][$i]['user']['id'];
+	// 		// 	if (!empty($blacklist) && !in_array($userid, $blacklist)) {
+	// 		// 		continue;
+	// 		// 	}
+	// 		// 	//dump($res['data']['data'][$i]);
+	// 		// 	$xuan = ['category=6&tag_id=603', 'category=6&tag_id=604'];
+	// 		// 	echo sprintf("%d-%s-%s" . PHP_EOL, $i + 1, $res['data']['data'][$i]['user']['screen_name'], self::wbReport($mid, $xuan, $cookie, 2));
+	// 		// 	//sleep(4);
+	// 		// 	sleep(4);
+
+	// 		// }
+	// 		$res = Http::R("https://m.weibo.cn/comments/hotflow?id={$id}&mid={$id}&max_id={$max_id}&max_id_type=0", '', ['Cookie: ' . $cookie]);
+	// 		dump($res);
+
+	// 	}
+	// }
 
 }
 
